@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Fórum Web</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+<body>
+    <header class="topo">
+        <div class="container">
+            <div>
+                <p class="marca">Mini Fórum Web</p>
+                <h1>Posts da comunidade</h1>
+            </div>
+            <a class="botao botao-destaque" href="/create">Novo post</a>
+        </div>
+    </header>
+
+    <main class="container principal">
+        {% if posts %}
+            <section class="lista-posts">
+                {% for post in posts %}
+                    <article class="card-post">
+                        <div class="card-conteudo">
+                            <p class="meta">Post #{{ post.id }} · {{ post.autor }}</p>
+                            <h2>{{ post.titulo }}</h2>
+                            <p class="resumo">{{ post.resumo }}</p>
+                        </div>
+
+                        <div class="acoes">
+                            <a class="botao" href="/post/{{ post.id }}">Visualizar</a>
+                            <a class="botao botao-secundario" href="/edit/{{ post.id }}">Editar</a>
+                            <form action="/delete/{{ post.id }}" method="post">
+                                <button class="botao botao-perigo" type="submit">Excluir</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        {% else %}
+            <section class="vazio">
+                <h2>Nenhum post cadastrado</h2>
+                <p>Crie o primeiro post para começar a movimentar o fórum.</p>
+                <a class="botao botao-destaque" href="/create">Criar primeiro post</a>
+            </section>
+        {% endif %}
+    </main>
+
+    <script src="{{ url_for('static', path='js/script.js') }}"></script>
+</body>
+</html>

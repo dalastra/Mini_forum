@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Post</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+<body>
+    <main class="container pagina-formulario">
+        <a class="voltar" href="/">← Voltar para a página inicial</a>
+
+        <section class="painel-formulario">
+            <p class="marca">Mini Fórum Web</p>
+            <h1>Criar novo post</h1>
+            <p class="subtitulo">Preencha os campos abaixo para adicionar um novo post à lista em memória.</p>
+
+            <form action="/create" method="post" class="formulario-post">
+                <label for="titulo">Título</label>
+                <input type="text" id="titulo" name="titulo" required>
+
+                <label for="resumo">Resumo</label>
+                <input type="text" id="resumo" name="resumo" required>
+
+                <label for="conteudo">Conteúdo</label>
+                <textarea id="conteudo" name="conteudo" rows="8" required></textarea>
+
+                <label for="autor">Autor</label>
+                <input type="text" id="autor" name="autor" required>
+
+                <div class="grupo-botoes">
+                    <button class="botao botao-destaque" type="submit">Salvar post</button>
+                    <a class="botao botao-secundario" href="/">Cancelar</a>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', path='js/script.js') }}"></script>
+</body>
+</html>
