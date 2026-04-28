@@ -1,46 +1,38 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+
+from database import SessionLocal, engine
+from models import Base, Post
 
 app = FastAPI()
 
+# Criar tabelas
+Base.metadata.create_all(bind=engine)
+
+# Static + templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-posts = [
-    {
-        "id": 1,
-        "titulo": "Meu primeiro post",
-        "resumo": "Uma breve apresentação do mini fórum feito com FastAPI.",
-        "conteudo": "Este é o conteúdo completo do primeiro post. Aqui você pode mostrar o texto inteiro do post.",
-        "autor": "Carlos",
-    },
-    {
-        "id": 2,
-        "titulo": "Segundo post",
-        "resumo": "Exemplo de outro post salvo em memória.",
-        "conteudo": "Todos os dados deste projeto ficam apenas em memória, sem uso de banco de dados.",
-        "autor": "Ana",
-    },
-]
+
+# Dependência do banco
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-def buscar_post(post_id: int):
-    for post in posts:
-        if post["id"] == post_id:
-            return post
-    return None
-
-
-def gerar_novo_id():
-    if not posts:
-        return 1
-    return posts[-1]["id"] + 1
-
+# =========================
+# ROTAS
+# =========================
 
 @app.get("/")
-async def index(request: Request):
+async def index(request: Request, db: Session = Depends(get_db)):
+    posts = db.query(Post).all()
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -49,8 +41,8 @@ async def index(request: Request):
 
 
 @app.get("/post/{id}")
-async def visualizar_post(request: Request, id: int):
-    post = buscar_post(id)
+async def visualizar_post(request: Request, id: int, db: Session = Depends(get_db)):
+    post = db.query(Post).filter(Post.id == id).first()
     return templates.TemplateResponse(
         request=request,
         name="post.html",
@@ -68,24 +60,26 @@ async def pagina_criar(request: Request):
 
 
 @app.post("/create")
-async def criar_post(request: Request):
+async def criar_post(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
 
-    novo_post = {
-        "id": gerar_novo_id(),
-        "titulo": form.get("titulo"),
-        "resumo": form.get("resumo"),
-        "conteudo": form.get("conteudo"),
-        "autor": form.get("autor"),
-    }
+    novo_post = Post(
+        titulo=form.get("titulo"),
+        resumo=form.get("resumo"),
+        conteudo=form.get("conteudo"),
+        autor=form.get("autor"),
+    )
 
-    posts.append(novo_post)
+    db.add(novo_post)
+    db.commit()
+    db.refresh(novo_post)
+
     return RedirectResponse(url="/", status_code=303)
 
 
 @app.get("/edit/{id}")
-async def pagina_editar(request: Request, id: int):
-    post = buscar_post(id)
+async def pagina_editar(request: Request, id: int, db: Session = Depends(get_db)):
+    post = db.query(Post).filter(Post.id == id).first()
     return templates.TemplateResponse(
         request=request,
         name="edit.html",
@@ -94,23 +88,27 @@ async def pagina_editar(request: Request, id: int):
 
 
 @app.post("/edit/{id}")
-async def editar_post(request: Request, id: int):
-    post = buscar_post(id)
+async def editar_post(request: Request, id: int, db: Session = Depends(get_db)):
+    post = db.query(Post).filter(Post.id == id).first()
     form = await request.form()
 
-    if post is not None:
-        post["titulo"] = form.get("titulo")
-        post["resumo"] = form.get("resumo")
-        post["conteudo"] = form.get("conteudo")
-        post["autor"] = form.get("autor")
+    if post:
+        post.titulo = form.get("titulo")
+        post.resumo = form.get("resumo")
+        post.conteudo = form.get("conteudo")
+        post.autor = form.get("autor")
+
+        db.commit()
 
     return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/delete/{id}")
-async def excluir_post(id: int):
-    post = buscar_post(id)
-    if post is not None:
-        posts.remove(post)
+async def excluir_post(id: int, db: Session = Depends(get_db)):
+    post = db.query(Post).filter(Post.id == id).first()
+
+    if post:
+        db.delete(post)
+        db.commit()
 
     return RedirectResponse(url="/", status_code=303)
